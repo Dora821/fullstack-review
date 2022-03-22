@@ -6,6 +6,7 @@ let repoSchema = mongoose.Schema({
   user_id: Number,
   url: String,
   repo_name: String,
+  user_name: String,
   size: Number
 });
 
@@ -36,5 +37,20 @@ let displayData = (callback) => {
   // });
   return Repo.find({}).sort({'size': -1}).limit(25);
 };
+
+
+let updateData = (obj) => {
+  let filter = {'repo_id': obj.repo_id};
+  let update = {
+    'user_id': obj.repo_id,
+    'url': obj.user_id,
+    'repo_name': obj.url,
+    'size': obj.size,
+    'user_name': obj.user_name
+  };
+  return Repo.findOneAndUpdate(filter, update, {new: true, upsert: true});
+
+};
 module.exports.save = save;
 module.exports.displayData = displayData;
+module.exports.updateData = updateData;

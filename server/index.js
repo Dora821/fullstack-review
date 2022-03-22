@@ -1,6 +1,7 @@
 const express = require('express');
 const getAPI = require('../helpers/github.js');
 const savetoDB = require('../database/index.js');
+const {promisify} = require('util');
 
 let app = express();
 
@@ -13,23 +14,32 @@ app.post('/repos', function (req, res) {
   console.log('user name get in server post requet', user);
   getAPI.getReposByUsername(user)
     .then((result)=> {
+      // console.log('data returned from API', result.data);
       let insertedData = result.data.map((obj) => {
         return {
           'repo_id': obj.id,
           'user_id': obj.owner.id,
           'url': obj.html_url,
           'repo_name': obj.name,
-          'size': obj.size
+          'size': obj.size,
+          'user_name': obj.owner.login
         };
       });
-      console.log('data received from GHAPI in server', insertedData);
-      savetoDB.save(insertedData, (err, data)=> {
-        if (err) {
-          console.log('mongo error', err);
-        } else {
-          res.status(200).send('data posted to mongoDB');
-        }
-      });
+      console.log(`${insertedData.length} received from GHAPI in server`, insertedData);
+      var promiseData = insertedData.map((obj)=> savetoDB.updateData(obj));
+      // console.log('--------------------------promiseData', promiseData);
+      Promise.all(promiseData)
+        .then((data=>res.send(`${data.length} have been posted to database`)))
+        .catch((err)=> console.log(err));
+      // ---------------------------------------------------
+      // savetoDB.save(insertedData, (err, data)=> {
+      //   if (err) {
+      //     console.log('mongo error', err);
+      //   } else {
+      //     console.log(data);
+      //     res.status(200).send('data posted to mongoDB');
+      //   }
+      // });
     // edit data
     // write data in MONGO DB
     })
